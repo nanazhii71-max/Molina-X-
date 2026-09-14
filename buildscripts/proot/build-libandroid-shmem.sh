@@ -41,4 +41,4 @@ mkdir -p "${STAGING_DIR}/include/sys"
 cp shm.h "${STAGING_DIR}/include/sys/shm.h"
 
 echo "== SELESAI libandroid-shmem ABI=${ABI}"
-ls -la "${STAGING_DIR}/lib/libandroid-shmem.a" "${DIST_DIR}/libandroid-shmem.so" "${STAGING_DIR}/include/shm.h"
+ls -la "${STAGING_DIR}/lib/libandroid-shmem.a" "${DIST_DIR}/libandroid-shmem.so" "${STAGING_DIR}/include/sys/shm.h"
