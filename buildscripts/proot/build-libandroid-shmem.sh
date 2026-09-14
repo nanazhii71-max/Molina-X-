@@ -22,6 +22,13 @@ echo "${SHMEM_SHA256}  shmem.tar.gz" | sha256sum -c -
 tar xf shmem.tar.gz
 cd "libandroid-shmem-${SHMEM_VERSION}"
 
+# _PATH_TMP tidak ada di Bionic paths.h (VERIFIED android.googlesource.com/platform/bionic) —
+# dipakai shmem.c utk symlink key ashmem (SysV shm emulation). Diarahkan ke app-private storage
+# Molina-X, sibling dari rootfs/ (konsisten §8.1/8.3 blueprint). Direktori ini WAJIB dibuat oleh
+# TerminalService/RuntimeExecutionBridge sebelum proot pertama kali jalan (belum diimplementasi
+# di sini — dicatat sbg dependency Phase 3 tahap TerminalSession).
+export CFLAGS='-D_PATH_TMP=\"/data/data/com.molinax/files/tmp/\"'
+
 echo "== Build .a dan .so"
 make CC="${CC}" AR="${AR}" libandroid-shmem.a
 make CC="${CC}" AR="${AR}" libandroid-shmem.so
