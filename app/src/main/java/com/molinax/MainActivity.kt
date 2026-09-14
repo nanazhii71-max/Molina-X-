@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
+import com.molinax.ui.theme.MolinaXTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.molinax.navigation.NavigationHost
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
+            MolinaXTheme {
                 Surface(modifier = Modifier) {
                     NavigationHost()
                 }
