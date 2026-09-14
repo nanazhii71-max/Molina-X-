@@ -36,7 +36,9 @@ make CC="${CC}" AR="${AR}" libandroid-shmem.so
 echo "== Salin artifact ke staging (proot link ke .a saja, .so disimpan sbg artifact cadangan)"
 cp libandroid-shmem.a "${STAGING_DIR}/lib/"
 cp libandroid-shmem.so "${DIST_DIR}/"
-cp shm.h "${STAGING_DIR}/include/"
+mkdir -p "${STAGING_DIR}/include/sys"
+
+cp shm.h "${STAGING_DIR}/include/sys/shm.h"
 
 echo "== SELESAI libandroid-shmem ABI=${ABI}"
 ls -la "${STAGING_DIR}/lib/libandroid-shmem.a" "${DIST_DIR}/libandroid-shmem.so" "${STAGING_DIR}/include/shm.h"
