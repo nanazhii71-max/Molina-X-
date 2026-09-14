@@ -39,7 +39,7 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK (Phase 1 — App Host + 4 feature Host)
+      - name: Build debug APK (Phase 2 — Terminal Emulator library wiring)
         run: ./gradlew :app:assembleDebug --stacktrace
 
       - name: VERIFY APK actually exists on disk
@@ -47,9 +47,17 @@ jobs:
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK_PATH" && echo "APK: OK ($(du -sh "$APK_PATH" | cut -f1))" || (echo "APK: MISSING at $APK_PATH" && find app/build/outputs -type f && exit 1)
 
+      - name: VERIFY libtermux.so present in APK (arm64-v8a & armeabi-v7a)
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          echo "--- Isi lib/ di APK ---"
+          unzip -l "$APK_PATH" | grep "lib/" || true
+          unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a/libtermux.so" && echo "libtermux.so arm64-v8a: OK" || (echo "libtermux.so arm64-v8a: MISSING" && exit 1)
+          unzip -l "$APK_PATH" | grep -q "lib/armeabi-v7a/libtermux.so" && echo "libtermux.so armeabi-v7a: OK" || (echo "libtermux.so armeabi-v7a: MISSING" && exit 1)
+
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MolinaX-debug-apk-phase1
+          name: MolinaX-debug-apk-phase2
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
