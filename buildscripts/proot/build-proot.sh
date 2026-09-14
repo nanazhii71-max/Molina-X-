@@ -19,21 +19,25 @@ git rev-parse HEAD
 git describe --tags
 
 # ARG_MAX wajib manual (gap nyata di Bionic, bukan soal git)
-EXTRA_CFLAGS="-DARG_MAX=131072"
-EXTRA_LDFLAGS=""
+# PENTING: pakai environment variable export (bukan command-line make var) — konsisten dgn pola
+# yang sudah terbukti benar (CC via common.sh, CFLAGS via build-libandroid-shmem.sh). Command-line
+# make var sebelumnya bikin -I. dari GNUmakefile (CPPFLAGS += ... -I. -I$(VPATH)) tidak ter-append
+# dgn aman, shg cli/cli.h gagal ketemu (Run CI #3, run 34908028898).
+export CPPFLAGS="-I${STAGING_DIR}/include"
+export CFLAGS="-DARG_MAX=131072"
+export LDFLAGS="-L${STAGING_DIR}/lib"
 
 if [ "${ABI}" = "arm64-v8a" ]; then
     # NDK r28: default 16KB page size utk arm64-v8a — proot sudah aman (pakai sysconf(_SC_PAGE_SIZE)
     # runtime, bukan macro compile-time), flag ini preventif utk ELF alignment binary itu sendiri.
-    EXTRA_LDFLAGS="-Wl,-z,max-page-size=16384"
+    export LDFLAGS="${LDFLAGS} -Wl,-z,max-page-size=16384"
 fi
 
 echo "== Build proot (PROOT_WITH_LIBANDROID_SHMEM=true)"
-make -C src \
-    PROOT_WITH_LIBANDROID_SHMEM=true \
-    CPPFLAGS="-I${STAGING_DIR}/include" \
-    CFLAGS="${EXTRA_CFLAGS}" \
-    LDFLAGS="-L${STAGING_DIR}/lib ${EXTRA_LDFLAGS}"
+echo "== CPPFLAGS=${CPPFLAGS}"
+echo "== CFLAGS=${CFLAGS}"
+echo "== LDFLAGS=${LDFLAGS}"
+make -C src PROOT_WITH_LIBANDROID_SHMEM=true
 
 echo "== Verifikasi arsitektur binary hasil build"
 "${OBJDUMP}" -f src/proot
