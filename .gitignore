@@ -1,0 +1,92 @@
+# --- Secrets & signing (WAJIB) ---
+local.properties
+*.keystore
+*.jks
+**/keystore.properties
+**/signing.properties
+key.properties
+**/key.properties
+**/google-services.json
+**/*.p12
+**/*.pem
+**/*.asc
+**/*.gpg
+**/secrets.properties
+.env
+.env.*
+*.env
+**/local.debug.properties
+
+# --- Build artifacts ---
+.gradle/
+build/
+**/build/
+gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+*.iml
+.idea/
+.navigation/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+**/build/outputs/
+**/build/intermediates/
+**/build/generated/
+**/build/reports/detekt/
+**/build/reports/tests/
+**/build/test-results/
+**/build/reports/androidTests/
+**/build/outputs/roborazzi/*_actual.png
+**/build/outputs/roborazzi/*_compare.png
+*.hprof
+heap-*.hprof
+oom-dump.hprof
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.externalNativeBuild/
+.cxx/
+*.log
+
+# --- Native build artifacts (proot & libmpv, hasil buildscripts/) ---
+buildscripts/proot/*.tar.gz
+buildscripts/mpv/*.tar.gz
+buildscripts/**/*.zip
+
+# --- Claude / AI assistant local files ---
+.claude/
+.claude/settings.local.json
+CLAUDE.local.md
+.anthropic/
+.mcp.json
+
+# --- Debug/test log files (dari sesi manual/CI lokal, bukan bagian repo) ---
+*.log
+*log*.txt
+log[0-9]*.txt
+logfail*.txt
+run-log*.txt
+full-run-log*.txt
+unittest-section*.txt
+/sdcard/log.txt
+
+# --- IDE/editor tambahan ---
+.vscode/
+*.orig
+*.rej
+
+# --- Gradle tambahan (Kotlin DSL script cache) ---
+.kotlin/
+
+# --- Rootfs hasil fetch runtime (jangan pernah ter-commit, harus selalu fetch ulang) ---
+**/rootfs/
+**/*.tar.xz
+**/*.tar.gz.sha256sum.tmp
