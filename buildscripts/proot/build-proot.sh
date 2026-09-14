@@ -46,6 +46,10 @@ echo "== Build proot (PROOT_WITH_LIBANDROID_SHMEM=true)"
 echo "== CPPFLAGS=${CPPFLAGS}"
 echo "== CFLAGS=${CFLAGS}"
 echo "== LDFLAGS=${LDFLAGS}"
+echo "== DIAGNOSTIK: baris GNUmakefile terkait LDLIBS/LDFLAGS/LIBANDROID_SHMEM/liblog/libandroid" 
+grep -n -i "LDLIBS\|LDFLAGS\|LIBANDROID_SHMEM\|liblog\|libandroid" src/GNUmakefile || true 
+echo "== DIAGNOSTIK: aturan link target proot (baris di sekitar \$(PROOT):)" 
+grep -n -A5 "^\$(PROOT):" src/GNUmakefile || true
 make -C src PROOT_WITH_LIBANDROID_SHMEM=true
 
 echo "== Verifikasi arsitektur binary hasil build"
