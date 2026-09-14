@@ -18,11 +18,20 @@ echo "== Verifikasi commit yang benar-benar ter-checkout (integritas via git, co
 git rev-parse HEAD
 git describe --tags
 
+# PATCH SUMBER: extension/ashmem_memfd/ashmem_memfd.c pakai strcmp() (baris 42) dan memset()
+# (baris 179) tapi TIDAK PERNAH #include <string.h> — VERIFIED langsung dari source (grep
+# "#include" file ini, tidak ada string.h). Ini genuine gap di source upstream utk path Bionic
+# (file di-guard #if defined(__ANDROID__) || defined(__BIONIC__)), kemungkinan di host asli
+# (glibc) string.h ketarik transitif dari header lain, di Bionic tidak. clang NDK r28 treat
+# implicit function declaration sbg error keras (Run CI #4, run 34908349432).
+echo "== Patch: tambah #include <string.h> ke ashmem_memfd.c (gap Bionic, VERIFIED dari source)"
+sed -i '/#include <unistd.h>/a #include <string.h> /* strcmp, memset -- gap source upstream utk Bionic, VERIFIED tidak di-include sama sekali */' \
+    src/extension/ashmem_memfd/ashmem_memfd.c
+
+echo "== Verifikasi patch berhasil masuk"
+head -n 10 src/extension/ashmem_memfd/ashmem_memfd.c
+
 # ARG_MAX wajib manual (gap nyata di Bionic, bukan soal git)
-# PENTING: pakai environment variable export (bukan command-line make var) — konsisten dgn pola
-# yang sudah terbukti benar (CC via common.sh, CFLAGS via build-libandroid-shmem.sh). Command-line
-# make var sebelumnya bikin -I. dari GNUmakefile (CPPFLAGS += ... -I. -I$(VPATH)) tidak ter-append
-# dgn aman, shg cli/cli.h gagal ketemu (Run CI #3, run 34908028898).
 export CPPFLAGS="-I${STAGING_DIR}/include"
 export CFLAGS="-DARG_MAX=131072"
 export LDFLAGS="-L${STAGING_DIR}/lib"
