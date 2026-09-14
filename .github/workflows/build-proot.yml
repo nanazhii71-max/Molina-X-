@@ -25,7 +25,13 @@ jobs:
         with:
           ndk-version: r28c
           add-to-path: false
-          local-cache: true
+          local-cache: false
+
+      - name: Diagnostic - isi toolchain bin (bukti nyata, bukan asumsi)
+        run: |
+          set -euo pipefail
+          echo "=== ls -la toolchain bin ==="
+          ls -la "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/" | grep -E "llvm-ar|llvm-ranlib|llvm-strip|llvm-objcopy|llvm-objdump|clang"
 
       - name: Build libtalloc
         env:
