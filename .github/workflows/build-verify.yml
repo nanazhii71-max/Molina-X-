@@ -1,0 +1,55 @@
+name: Build Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup JDK 21 (Temurin)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Accept SDK licenses
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+
+      - name: Install Build-Tools 37.0.0, Platform 37.0
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "build-tools;37.0.0" \
+            "platforms;android-37.0"
+
+      - name: VERIFY packages actually installed on disk
+        run: |
+          test -d "${ANDROID_SDK_ROOT}/build-tools/37.0.0" && echo "Build-Tools 37.0.0: OK" || (echo "Build-Tools 37.0.0: MISSING" && exit 1)
+          test -d "${ANDROID_SDK_ROOT}/platforms/android-37.0" && echo "Platform 37.0: OK" || (echo "Platform 37.0: MISSING" && exit 1)
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK (Phase 1 — App Host + 4 feature Host)
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: VERIFY APK actually exists on disk
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_PATH" && echo "APK: OK ($(du -sh "$APK_PATH" | cut -f1))" || (echo "APK: MISSING at $APK_PATH" && find app/build/outputs -type f && exit 1)
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MolinaX-debug-apk-phase1
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
