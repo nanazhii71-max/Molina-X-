@@ -1,0 +1,32 @@
+package com.molinax.manager.utilities
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+
+@Composable
+fun UtilitiesHost(modifier: Modifier = Modifier) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = { TopAppBar(title = { Text("Utilities") }) }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Utilities subsystem — diimplementasikan di Phase 8",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
