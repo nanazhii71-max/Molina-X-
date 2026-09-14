@@ -1,4 +1,4 @@
-package com.molinax.manager.editor
+package com.molinax.utilities
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun EditorHost(modifier: Modifier = Modifier) {
+fun UtilitiesHost(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Editor") }) }
+        topBar = { TopAppBar(title = { Text("Utilities") }) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -24,7 +24,7 @@ fun EditorHost(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Editor subsystem — diimplementasikan di Phase 5 & 6",
+                text = "Utilities subsystem — diimplementasikan di Phase 8",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

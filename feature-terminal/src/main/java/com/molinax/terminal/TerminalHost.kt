@@ -1,4 +1,4 @@
-package com.molinax.manager.utilities
+package com.molinax.terminal
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun UtilitiesHost(modifier: Modifier = Modifier) {
+fun TerminalHost(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Utilities") }) }
+        topBar = { TopAppBar(title = { Text("Terminal") }) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -24,7 +24,7 @@ fun UtilitiesHost(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Utilities subsystem — diimplementasikan di Phase 8",
+                text = "Terminal subsystem — diimplementasikan di Phase 2 & 3",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

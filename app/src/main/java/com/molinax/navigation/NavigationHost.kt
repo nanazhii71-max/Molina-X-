@@ -1,4 +1,4 @@
-package com.molinax.manager.navigation
+package com.molinax.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,10 +19,10 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.molinax.manager.editor.EditorHost
-import com.molinax.manager.player.PlayerHost
-import com.molinax.manager.terminal.TerminalHost
-import com.molinax.manager.utilities.UtilitiesHost
+import com.molinax.editor.EditorHost
+import com.molinax.player.PlayerHost
+import com.molinax.terminal.TerminalHost
+import com.molinax.utilities.UtilitiesHost
 import kotlinx.serialization.Serializable
 
 @Serializable

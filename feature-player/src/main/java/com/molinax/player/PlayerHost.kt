@@ -1,4 +1,4 @@
-package com.molinax.manager.player
+package com.molinax.player
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

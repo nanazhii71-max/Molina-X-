@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.molinax.manager"
+    namespace = "com.molinax"
     compileSdk = rootProject.extra["molinaxCompileSdk"] as Int
     ndkVersion = rootProject.extra["molinaxNdkVersion"] as String
 
     defaultConfig {
-        applicationId = "com.molinax.manager"
+        applicationId = "com.molinax"
         minSdk = rootProject.extra["molinaxMinSdk"] as Int
         targetSdk = rootProject.extra["molinaxTargetSdk"] as Int
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.molinax.manager
+package com.molinax
 
 import android.app.Application
 
