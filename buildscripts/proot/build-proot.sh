@@ -31,6 +31,26 @@ sed -i '/#include <unistd.h>/a #include <string.h> /* strcmp, memset -- gap sour
 echo "== Verifikasi patch berhasil masuk"
 head -n 10 src/extension/ashmem_memfd/ashmem_memfd.c
 
+# PATCH SUMBER #2: GNUmakefile baris "LDFLAGS += -landroid-shmem" (ifdef
+# PROOT_WITH_LIBANDROID_SHMEM) tidak pernah menambahkan -llog -landroid.
+# VERIFIED dari diagnostik CI run 34910376917 (grep langsung GNUmakefile
+# ter-clone): LDFLAGS disusun HANYA lewat rangkaian += (baris 19: -ltalloc,
+# baris 22: -landroid-shmem), tidak ada variabel LDLIBS terpisah, dan macro
+# LINK (baris 181) menaruh $(LDFLAGS) SETELAH object files -- jadi posisi di
+# ujung LDFLAGS sudah benar utk linker, tapi ujung itu dikuasai Makefile
+# sendiri (Makefile append setelah nilai environment kita), bukan kita.
+# Satu-satunya cara valid taruh -llog -landroid SETELAH -landroid-shmem
+# (wajib, krn shmem.c pakai __android_log_print dari liblog dan
+# ASharedMemory_create/getSize dari libandroid, keduanya undefined saat
+# link run CI 34909951558) adalah patch inline baris ini, bukan lewat
+# environment LDFLAGS (yang selalu jadi PREFIX, bukan SUFFIX, dari nilai
+# yang di-append Makefile).
+echo "== Patch: tambah -llog -landroid setelah -landroid-shmem di GNUmakefile (gap upstream, VERIFIED)"
+sed -i 's/LDFLAGS += -landroid-shmem/LDFLAGS += -landroid-shmem -llog -landroid/' src/GNUmakefile
+
+echo "== Verifikasi patch GNUmakefile berhasil masuk"
+grep -n 'landroid-shmem\|LDFLAGS' src/GNUmakefile
+
 # ARG_MAX wajib manual (gap nyata di Bionic, bukan soal git)
 export CPPFLAGS="-I${STAGING_DIR}/include"
 export CFLAGS="-DARG_MAX=131072"
