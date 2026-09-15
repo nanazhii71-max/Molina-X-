@@ -14,4 +14,5 @@ extra["molinaxJvmToolchain"] = 21
 extra["molinaxComposeBom"] = "2026.08.00"
 extra["molinaxNavigation3"] = "1.1.7"
 extra["molinaxSerializationCore"] = "1.11.0"
+extra["molinaxDatastorePreferences"] = "1.2.1"
 extra["molinaxOkHttp"] = "5.5.0"

@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -27,6 +28,8 @@ kotlin {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${rootProject.extra["molinaxSerializationCore"]}")
+    implementation("androidx.datastore:datastore-preferences:${rootProject.extra["molinaxDatastorePreferences"]}")
 
     implementation(project(":core-common"))
 
