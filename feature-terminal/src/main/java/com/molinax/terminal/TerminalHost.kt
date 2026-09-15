@@ -259,7 +259,20 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                         }
                         AndroidView(
                             modifier = Modifier.fillMaxWidth().weight(1f),
-                            factory = { ctx -> TerminalView(ctx, null).also { terminalView = it } },
+                            factory = { ctx ->
+                                TerminalView(ctx, null).apply {
+                                    // VERIFIED FIX (akar bug keyboard DAN copy-paste): TerminalView.java resmi
+                                    // (startTextSelectionMode() baris ~1389, onSingleTapUp internal baris ~158)
+                                    // memanggil requestFocus() dan diam-diam berhenti kalau gagal. Dalam touch
+                                    // mode, requestFocus() SELALU gagal kecuali focusableInTouchMode=true --
+                                    // XML asli Termux (activity_termux.xml) set ini eksplisit; karena kita buat
+                                    // TerminalView programatik (bukan inflate XML), atribut ini tidak pernah
+                                    // ter-set otomatis dan harus diset manual di sini.
+                                    isFocusable = true
+                                    isFocusableInTouchMode = true
+                                    terminalView = this
+                                }
+                            },
                         )
                         AndroidView(
                             modifier = Modifier.fillMaxWidth().height(EXTRA_KEYS_HEIGHT),
