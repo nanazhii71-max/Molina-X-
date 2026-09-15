@@ -1,6 +1,10 @@
 package com.molinax.terminal
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,20 +35,10 @@ import com.molinax.terminal.io.TerminalExtraKeys
 import com.molinax.terminal.io.extrakeys.ExtraKeysConstants
 import com.molinax.terminal.io.extrakeys.ExtraKeysInfo
 import com.molinax.terminal.io.extrakeys.ExtraKeysView
-import com.molinax.terminal.runtime.PinnedDebianRootfs
-import com.molinax.terminal.runtime.RootfsProvisioner
-import com.molinax.terminal.session.InteractiveProotSessionFactory
-import com.molinax.terminal.session.MolinaXTerminalSessionClient
+import com.molinax.terminal.service.TerminalService
+import com.molinax.terminal.service.TerminalServiceState
 import com.molinax.terminal.session.MolinaXTerminalViewClient
-import com.molinax.terminal.session.ProotBinaryMissingException
-import com.molinax.terminal.session.RootfsNotReadyException
-import com.molinax.terminal.session.SessionMetadataStore
-import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.util.UUID
 
 /**
  * Default row layout dari JavaDoc resmi [ExtraKeysInfo] (contoh "2 row" di kelas itu) --
@@ -55,92 +50,80 @@ private const val DEFAULT_EXTRA_KEYS_LAYOUT =
     "[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP']," +
         "['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]"
 
-private sealed class TerminalUiState {
-    data object CheckingRootfs : TerminalUiState()
-    data class Provisioning(val fraction: Float) : TerminalUiState()
-    data object StartingSession : TerminalUiState()
-    data class SessionReady(val session: TerminalSession) : TerminalUiState()
-    data class Error(val message: String) : TerminalUiState()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TerminalHost(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
-    val provisioner = remember { RootfsProvisioner(context.filesDir) }
-    val sessionFactory = remember { InteractiveProotSessionFactory(context, provisioner) }
-    val sessionMetadataStore = remember { SessionMetadataStore(context) }
-
-    var uiState by remember { mutableStateOf<TerminalUiState>(TerminalUiState.CheckingRootfs) }
-    var retryToken by remember { mutableStateOf(0) }
+    var boundService by remember { mutableStateOf<TerminalService?>(null) }
+    var uiState by remember { mutableStateOf<TerminalServiceState>(TerminalServiceState.CheckingRootfs) }
     var sessionFinishedMessage by remember { mutableStateOf<String?>(null) }
 
     var terminalView by remember { mutableStateOf<TerminalView?>(null) }
     var extraKeysView by remember { mutableStateOf<ExtraKeysView?>(null) }
     var terminalWired by remember { mutableStateOf(false) }
 
-    LaunchedEffect(retryToken) {
-        uiState = TerminalUiState.CheckingRootfs
-        sessionFinishedMessage = null
-        terminalWired = false
-        try {
-            val spec = PinnedDebianRootfs.forCurrentDevice()
-            if (!provisioner.isProvisioned(spec)) {
-                uiState = TerminalUiState.Provisioning(0f)
-                withContext(Dispatchers.IO) {
-                    provisioner.provision(spec) { bytesRead, totalBytes ->
-                        val fraction = if (totalBytes > 0) {
-                            (bytesRead.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                        } else {
-                            0f
-                        }
-                        uiState = TerminalUiState.Provisioning(fraction)
-                    }
-                }
+    // Bind ke TerminalService (pola resmi TermuxActivity: startService() dulu supaya proses shell
+    // tetap hidup terlepas dari siapa yang bind, baru bindService() dengan flags=0 -- BUKAN
+    // BIND_AUTO_CREATE, karena start dan bind sengaja dipisah). Hanya di-unbind saat Composable
+    // dibuang (pindah tab/Activity destroy) -- TIDAK di-stopService, supaya shell tetap jalan di
+    // background persis tujuan Opsi A.
+    DisposableEffect(Unit) {
+        val serviceIntent = Intent(context, TerminalService::class.java)
+        val connection = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+                boundService = (binder as TerminalService.LocalBinder).service
             }
 
-            uiState = TerminalUiState.StartingSession
-
-            val sessionClient = MolinaXTerminalSessionClient(
-                context = context,
-                textChangedListener = { _ -> terminalView?.onScreenUpdated() },
-                titleChangedListener = { },
-                sessionFinishedListener = { finishedSession ->
-                    sessionFinishedMessage =
-                        "Sesi shell berakhir (exit code ${finishedSession.getExitStatus()})."
-                },
-            )
-
-            val session = withContext(Dispatchers.IO) {
-                val sessions = sessionMetadataStore.getSessions()
-                val metadata = sessions.firstOrNull() ?: sessionMetadataStore.addSession(
-                    handle = UUID.randomUUID().toString(),
-                    displayName = "Terminal",
-                    workingDirectory = "/root",
-                )
-                sessionFactory.create(cwd = metadata.workingDirectory, client = sessionClient)
+            override fun onServiceDisconnected(name: ComponentName?) {
+                boundService = null
             }
+        }
 
-            uiState = TerminalUiState.SessionReady(session)
-        } catch (e: RootfsNotReadyException) {
-            uiState = TerminalUiState.Error(e.message ?: "Rootfs belum siap.")
-        } catch (e: ProotBinaryMissingException) {
-            uiState = TerminalUiState.Error(e.message ?: "Binary proot tidak ditemukan.")
-        } catch (e: IOException) {
-            uiState = TerminalUiState.Error(e.message ?: "Gagal menyiapkan rootfs: ${e::class.simpleName}")
+        context.startForegroundService(serviceIntent)
+        // flags=0 (bukan BIND_AUTO_CREATE) -- persis pola resmi TermuxActivity: start dan bind
+        // sengaja dipisah supaya proses shell tetap hidup terlepas dari ada/tidaknya binder aktif.
+        context.bindService(serviceIntent, connection, 0)
+
+        onDispose {
+            boundService?.onSessionTextChanged = null
+            context.unbindService(connection)
+            boundService = null
+            terminalWired = false
         }
     }
 
+    LaunchedEffect(boundService) {
+        val service = boundService ?: return@LaunchedEffect
+        service.ensureSessionStarted()
+    }
+
+    LaunchedEffect(boundService) {
+        val service = boundService ?: return@LaunchedEffect
+        service.state.collect { state -> uiState = state }
+    }
+
+    LaunchedEffect(boundService) {
+        val service = boundService ?: return@LaunchedEffect
+        service.sessionFinishedMessage.collect { message -> sessionFinishedMessage = message }
+    }
+
     // Wiring TerminalView + ExtraKeysView + TerminalSession baru dilakukan sekali, begitu
-    // ketiganya (dua View lewat AndroidView interop, satu TerminalSession lewat state di atas)
-    // sudah tersedia bersamaan. Tidak bergantung pada urutan komposisi AndroidView.
-    val readySession = (uiState as? TerminalUiState.SessionReady)?.session
+    // ketiganya (dua View lewat AndroidView interop, satu TerminalSession lewat state dari
+    // service) sudah tersedia bersamaan. Tidak bergantung pada urutan komposisi AndroidView.
+    val readySession = (uiState as? TerminalServiceState.SessionReady)?.session
     val currentTerminalView = terminalView
     val currentExtraKeysView = extraKeysView
-    if (!terminalWired && readySession != null && currentTerminalView != null) {
+    val currentService = boundService
+    if (!terminalWired && readySession != null && currentTerminalView != null && currentService != null) {
         terminalWired = true
-        val viewClient = MolinaXTerminalViewClient(context, currentTerminalView, currentExtraKeysView)
+        currentService.onSessionTextChanged = { terminalView?.onScreenUpdated() }
+
+        val viewClient = MolinaXTerminalViewClient(
+            context,
+            currentTerminalView,
+            currentExtraKeysView,
+        )
         currentTerminalView.setTextSize(defaultTerminalTextSizePx(context))
         currentTerminalView.setTerminalViewClient(viewClient)
         currentTerminalView.attachSession(readySession)
@@ -163,7 +146,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             when (val state = uiState) {
-                is TerminalUiState.CheckingRootfs, is TerminalUiState.StartingSession -> {
+                is TerminalServiceState.CheckingRootfs, is TerminalServiceState.StartingSession -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
@@ -172,7 +155,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                         CircularProgressIndicator()
                         Text(
                             modifier = Modifier.padding(top = 16.dp),
-                            text = if (state is TerminalUiState.StartingSession) {
+                            text = if (state is TerminalServiceState.StartingSession) {
                                 "Memulai sesi shell..."
                             } else {
                                 "Memeriksa rootfs Debian..."
@@ -182,7 +165,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                     }
                 }
 
-                is TerminalUiState.Provisioning -> {
+                is TerminalServiceState.Provisioning -> {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(24.dp),
                         verticalArrangement = Arrangement.Center,
@@ -204,7 +187,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                     }
                 }
 
-                is TerminalUiState.Error -> {
+                is TerminalServiceState.Error -> {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(24.dp),
                         verticalArrangement = Arrangement.Center,
@@ -216,21 +199,22 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                         )
                         Button(
                             modifier = Modifier.padding(top = 16.dp),
-                            onClick = { retryToken++ },
+                            onClick = { boundService?.retry() },
                         ) {
                             Text("Coba lagi")
                         }
                     }
                 }
 
-                is TerminalUiState.SessionReady -> {
+                is TerminalServiceState.SessionReady -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         sessionFinishedMessage?.let { message ->
-                            Text(
-                                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                                text = message,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                                Text(text = message, style = MaterialTheme.typography.bodySmall)
+                                Button(onClick = { boundService?.retry() }) {
+                                    Text("Mulai sesi baru")
+                                }
+                            }
                         }
                         AndroidView(
                             modifier = Modifier.fillMaxWidth().weight(1f),
