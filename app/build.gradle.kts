@@ -5,6 +5,12 @@ plugins {
 }
 
 android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     namespace = "com.molinax"
     compileSdk = rootProject.extra["molinaxCompileSdk"] as Int
     ndkVersion = rootProject.extra["molinaxNdkVersion"] as String
