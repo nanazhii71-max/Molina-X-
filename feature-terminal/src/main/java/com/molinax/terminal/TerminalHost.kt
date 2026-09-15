@@ -5,11 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +40,7 @@ import com.molinax.terminal.io.extrakeys.ExtraKeysView
 import com.molinax.terminal.service.TerminalService
 import com.molinax.terminal.service.TerminalServiceState
 import com.molinax.terminal.session.MolinaXTerminalViewClient
+import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
 
 /**
@@ -50,6 +53,15 @@ private const val DEFAULT_EXTRA_KEYS_LAYOUT =
     "[['ESC','/',{key: '-', popup: '|'},'HOME','UP','END','PGUP']," +
         "['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN']]"
 
+/**
+ * VERIFIED dari activity_termux.xml resmi (termux-app tag v0.118.3): baris
+ * `android:layout_height="37.5dp"` untuk container extra keys per baris. Layout kita di atas
+ * punya 2 baris, jadi total tinggi = 37.5dp x 2 = 75dp. Tanpa tinggi eksplisit ini, ExtraKeysView
+ * (GridLayout dengan child LayoutParams width=0/height=0 + weight FILL -- lihat
+ * ExtraKeysView.reload()) collapse jadi 0dp di dalam parent WRAP_CONTENT dan tidak pernah terlihat.
+ */
+private val EXTRA_KEYS_HEIGHT = 75.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TerminalHost(modifier: Modifier = Modifier) {
@@ -61,7 +73,16 @@ fun TerminalHost(modifier: Modifier = Modifier) {
 
     var terminalView by remember { mutableStateOf<TerminalView?>(null) }
     var extraKeysView by remember { mutableStateOf<ExtraKeysView?>(null) }
-    var terminalWired by remember { mutableStateOf(false) }
+    // VERIFIED FIX (bug: layar beku setelah Stop dari notif + reopen): sebelumnya ini Boolean
+    // sekali-jalan (`terminalWired`). Begitu di-set true, TerminalView tidak PERNAH di-attachSession
+    // ulang lagi -- padahal setelah Stop (SIGKILL sengaja, lihat TerminalSession.finishIfRunning()
+    // v0.118.3) lalu app dibuka lagi, TerminalService instance BARU membuat TerminalSession BARU,
+    // tapi Composable ini (kalau Activity tidak destroy) masih hidup dengan terminalWired=true --
+    // sesi baru itu tidak pernah ter-attach ke View, layar tetap menampilkan transkrip sesi lama
+    // yang sudah mati. Diganti keyed by identitas objek TerminalSession: setiap kali readySession
+    // berbeda dari yang terakhir di-attach, wiring (attachSession + rebind onSessionTextChanged +
+    // reload ExtraKeys) dijalankan ulang.
+    var attachedSession by remember { mutableStateOf<TerminalSession?>(null) }
 
     // Bind ke TerminalService (pola resmi TermuxActivity: startService() dulu supaya proses shell
     // tetap hidup terlepas dari siapa yang bind, baru bindService() dengan flags=0 -- BUKAN
@@ -89,7 +110,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
             boundService?.onSessionTextChanged = null
             context.unbindService(connection)
             boundService = null
-            terminalWired = false
+            attachedSession = null
         }
     }
 
@@ -115,8 +136,10 @@ fun TerminalHost(modifier: Modifier = Modifier) {
     val currentTerminalView = terminalView
     val currentExtraKeysView = extraKeysView
     val currentService = boundService
-    if (!terminalWired && readySession != null && currentTerminalView != null && currentService != null) {
-        terminalWired = true
+    if (readySession != null && readySession !== attachedSession &&
+        currentTerminalView != null && currentService != null
+    ) {
+        attachedSession = readySession
         currentService.onSessionTextChanged = { terminalView?.onScreenUpdated() }
 
         val viewClient = MolinaXTerminalViewClient(
@@ -127,7 +150,25 @@ fun TerminalHost(modifier: Modifier = Modifier) {
         currentTerminalView.setTextSize(defaultTerminalTextSizePx(context))
         currentTerminalView.setTerminalViewClient(viewClient)
         currentTerminalView.attachSession(readySession)
+
+        // VERIFIED FIX (bug: keyboard tidak muncul saat pertama kali dibuka): pola ini
+        // direplikasi dari TermuxTerminalViewClient.setSoftKeyboardState (termux-app v0.118.3) --
+        // requestFocus() + postDelayed(showSoftInput, 300) SEKALI saat sesi baru siap, DITAMBAH
+        // setOnFocusChangeListener permanen supaya keyboard konsisten muncul/hilang tiap kali
+        // TerminalView memperoleh/kehilangan fokus (mis. balik dari background, ganti tab).
+        // Sebelumnya HANYA mengandalkan tap manual (onSingleTapUp) tanpa delay dan tanpa listener --
+        // showSoftInput yang dipanggil sinkron tepat setelah requestFocus() pada frame yang sama
+        // sering gagal karena window belum benar-benar mendapat fokus IME.
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        currentTerminalView.setOnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                view.postDelayed({ imm.showSoftInput(view, 0) }, 300)
+            } else {
+                imm.hideSoftInputFromWindow(view.windowToken, 0)
+            }
+        }
         currentTerminalView.requestFocus()
+        currentTerminalView.postDelayed({ imm.showSoftInput(currentTerminalView, 0) }, 300)
 
         if (currentExtraKeysView != null) {
             val extraKeysInfo = ExtraKeysInfo(
@@ -221,7 +262,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                             factory = { ctx -> TerminalView(ctx, null).also { terminalView = it } },
                         )
                         AndroidView(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().height(EXTRA_KEYS_HEIGHT),
                             factory = { ctx -> ExtraKeysView(ctx, null).also { extraKeysView = it } },
                         )
                     }

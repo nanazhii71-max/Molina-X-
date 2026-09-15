@@ -23,7 +23,10 @@ class MolinaXTerminalViewClient(
     override fun onSingleTapUp(e: MotionEvent) {
         terminalView.requestFocus()
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
+        // VERIFIED: KeyboardUtils.showSoftKeyboard (termux-shared v0.118.3) pakai flags=0,
+        // BUKAN SHOW_IMPLICIT -- SHOW_IMPLICIT boleh diabaikan sistem, flags=0 adalah
+        // permintaan tampil yang lebih tegas dan konsisten dengan perilaku Termux asli.
+        imm.showSoftInput(terminalView, 0)
     }
 
     override fun shouldBackButtonBeMappedToEscape(): Boolean = false

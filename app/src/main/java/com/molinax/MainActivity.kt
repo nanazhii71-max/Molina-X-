@@ -1,6 +1,7 @@
 package com.molinax
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -34,6 +35,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // VERIFIED: KeyboardUtils.setSoftInputModeAdjustResize (termux-shared v0.118.3) --
+        // tanpa ini, window tidak di-resize saat soft keyboard muncul, dan pada beberapa
+        // device turut berkontribusi pada keyboard yang gagal tampil/terpotong di TerminalView.
+        @Suppress("DEPRECATION")
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
         val crashLogFile = File(filesDir, "crash-logs/last-crash.txt")
         val crashLogText = if (crashLogFile.exists()) crashLogFile.readText() else null
 
@@ -57,10 +64,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/**
- * Ditampilkan sekali saat app dibuka setelah crash sebelumnya -- memungkinkan menyalin stack
- * trace penuh ke clipboard tanpa PC/adb/root (lihat MolinaXApplication.installCrashLogger()).
- */
 @Composable
 private fun CrashReportScreen(logText: String, onDismiss: () -> Unit) {
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
