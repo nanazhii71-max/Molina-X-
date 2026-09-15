@@ -19,3 +19,7 @@ android {
 kotlin {
     jvmToolchain(rootProject.extra["molinaxJvmToolchain"] as Int)
 }
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+}
