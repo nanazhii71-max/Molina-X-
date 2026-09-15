@@ -9,6 +9,7 @@ import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -186,7 +187,19 @@ fun TerminalHost(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = { TopAppBar(title = { Text("Terminal") }) },
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+                .padding(innerPadding)
+                // VERIFIED FIX (bug: jarak ExtraKeys-ke-keyboard kelebihan): innerPadding dari
+                // Scaffold sudah mencakup jatah navigationBars, tapi Modifier.padding(innerPadding)
+                // biasa TIDAK menandai jatah itu "sudah dikonsumsi" ke sistem WindowInsets --
+                // akibatnya imePadding() di Column SessionReady di bawah menghitung ulang dari nol
+                // dan menambah dobel sebesar navigation bar. consumeWindowInsets(innerPadding)
+                // (API resmi, developer.android.com/develop/ui/compose/system/insets-ui) memberi
+                // tahu child bahwa jatah sebesar innerPadding sudah terpakai, sehingga imePadding()
+                // di bawah hanya menambah SISA yang belum terpakai.
+                .consumeWindowInsets(innerPadding),
+        ) {
             when (val state = uiState) {
                 is TerminalServiceState.CheckingRootfs, is TerminalServiceState.StartingSession -> {
                     Column(
