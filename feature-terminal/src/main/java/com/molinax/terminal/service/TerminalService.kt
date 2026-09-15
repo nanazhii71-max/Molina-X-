@@ -165,16 +165,25 @@ class TerminalService : Service() {
                     },
                 )
 
-                val newSession = withContext(Dispatchers.IO) {
+                // Hanya kerja I/O-bound (baca metadata, validasi rootfs/proot, susun argumen) yang
+                // masuk Dispatchers.IO. Konstruksi TerminalSession() SENGAJA di luar withContext
+                // ini -- serviceScope berbasis Dispatchers.Main, jadi begitu withContext(IO) di
+                // bawah selesai, eksekusi kembali ke main thread sebelum createSession() dipanggil.
+                // Konstruktor TerminalSession (termux-app v0.118.3) membuat android.os.Handler
+                // secara internal, yang butuh Looper.prepare() -- hanya tersedia di main thread.
+                // Memanggilnya dari Dispatchers.IO menyebabkan
+                // "Can't create handler inside thread that has not called Looper.prepare()".
+                val launchSpec = withContext(Dispatchers.IO) {
                     val sessions = sessionMetadataStore.getSessions()
                     val metadata = sessions.firstOrNull() ?: sessionMetadataStore.addSession(
                         handle = UUID.randomUUID().toString(),
                         displayName = "Terminal",
                         workingDirectory = "/root",
                     )
-                    sessionFactory.create(cwd = metadata.workingDirectory, client = sessionClient)
+                    sessionFactory.prepareLaunchSpec(cwd = metadata.workingDirectory)
                 }
 
+                val newSession = sessionFactory.createSession(launchSpec, sessionClient)
                 session = newSession
                 updateNotification(sessionActive = true)
                 _state.value = TerminalServiceState.SessionReady(newSession)
