@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -248,7 +249,16 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                 }
 
                 is TerminalServiceState.SessionReady -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                            // VERIFIED FIX: androidx.compose.foundation.layout.imePadding (dokumentasi resmi
+                            // developer.android.com) -- di bawah enableEdgeToEdge() (dipakai MainActivity
+                            // sejak awal), Compose TIDAK otomatis menggeser konten saat IME muncul walau
+                            // windowSoftInputMode=adjustResize sudah diset; perlu imePadding() eksplisit
+                            // supaya Column ini (TerminalView + ExtraKeysView) mengecil dan ExtraKeysView
+                            // tetap berada tepat di atas keyboard, bukan tertutup olehnya.
+                            .imePadding(),
+                    ) {
                         sessionFinishedMessage?.let { message ->
                             Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                                 Text(text = message, style = MaterialTheme.typography.bodySmall)
