@@ -1,5 +1,6 @@
 package com.molinax.navigation
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
@@ -71,7 +72,9 @@ fun NavigationHost() {
     ) { innerPadding ->
         NavDisplay(
             backStack = backStack,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
             entryProvider = entryProvider {
                 entry<MolinaXTab.Player> { PlayerHost() }
                 entry<MolinaXTab.Editor> { EditorHost() }
