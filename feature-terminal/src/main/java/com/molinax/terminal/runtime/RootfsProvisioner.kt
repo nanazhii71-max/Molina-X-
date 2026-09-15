@@ -204,8 +204,21 @@ class RootfsProvisioner(
                                 "topological-sort, bukan diabaikan."
                         )
                     }
+                    // Android (SELinux, domain untrusted_app) menolak syscall link() ke
+                    // app_data_file -- "avc: denied { link }" -- bukan bug ekstraksi kita,
+                    // bukan soal urutan tar, dan TIDAK bisa dibuka lewat permission Manifest
+                    // apa pun (VERIFIED: kasus identik github.com/dotnet/runtime#126297,
+                    // AVC denial sama persis di /data/user/0 di semua ABI Android).
+                    // Hardlink diselesaikan sebagai copy byte-for-byte + permission entry asli
+                    // dari tar -- isi & mode identik dengan file asal, cukup untuk kebutuhan
+                    // dpkg/apt/eksekusi biner di dalam rootfs (tidak butuh inode sharing nyata).
                     Files.deleteIfExists(resolvedPath)
-                    Files.createLink(resolvedPath, linkTargetResolved)
+                    Files.copy(
+                        linkTargetResolved,
+                        resolvedPath,
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    )
+                    applyPosixPermissions(resolvedPath, linkEntry.mode)
                 }
             }
         }
