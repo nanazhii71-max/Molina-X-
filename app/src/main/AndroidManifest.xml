@@ -4,6 +4,9 @@
     <!-- Wajib eksplisit (blueprint Phase 3 item 6) — jangan andalkan warisan transitif dari dependency -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Wajib eksplisit (blueprint Phase 3 item 6) — TerminalService (Phase 3 item 5) butuh ini untuk startForeground(). Baseline API 26: normal permission, tanpa FOREGROUND_SERVICE_TYPE_* (itu baru wajib untuk targetSdk 34+, di luar scope proyek ini). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
 
     <application
         android:name=".MolinaXApplication"
