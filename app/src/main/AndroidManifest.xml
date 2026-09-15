@@ -26,9 +26,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Phase 3 item 5 (Bound Service, Opsi A -- pola resmi TermuxService): in-process
+        <!-- Phase 3 item 5 (Bound Service, Opsi A — pola resmi TermuxService): in-process
              LocalBinder saja, tidak ada kebutuhan IPC lintas app, jadi exported="false".
-             android:foregroundServiceType TIDAK dideklarasikan -- atribut ini baru wajib untuk
+             android:foregroundServiceType TIDAK dideklarasikan — atribut ini baru wajib untuk
              targetSdk 29+/34+ (di luar scope: targetSdk proyek dikunci 26, lihat root
              build.gradle.kts molinaxTargetSdk), jangan tambahkan tanpa kebutuhan nyata. -->
         <service
