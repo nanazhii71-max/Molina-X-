@@ -90,3 +90,7 @@ unittest-section*.txt
 **/rootfs/
 **/*.tar.xz
 **/*.tar.gz.sha256sum.tmp
+
+# Clone referensi upstream buat verifikasi manual — jangan pernah commit
+/ref-*
+/rootfs-test/

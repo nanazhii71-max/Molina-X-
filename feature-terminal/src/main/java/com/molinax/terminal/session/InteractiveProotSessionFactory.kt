@@ -44,6 +44,7 @@ class InteractiveProotSessionFactory(
         val hostArgs = buildList {
             add("proot")
             add("--kill-on-exit")
+            add("--link2symlink")
             add("--sysvipc")
             add("--ashmem-memfd")
             add("-0")

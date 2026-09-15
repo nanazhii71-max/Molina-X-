@@ -47,6 +47,7 @@ class ProotRuntimeExecutionBridge(
 
         val prootArgs = buildList {
             add("--kill-on-exit")
+            add("--link2symlink")
             add("--sysvipc")
             add("--ashmem-memfd")
             if (asRoot) add("-0")

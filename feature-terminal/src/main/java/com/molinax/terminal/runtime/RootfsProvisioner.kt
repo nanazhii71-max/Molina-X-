@@ -8,7 +8,6 @@ import okio.buffer
 import okio.sink
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -25,15 +24,14 @@ class RootfsIntegrityException(message: String) : IOException(message)
 class UnsupportedTarEntryException(message: String) : IOException(message)
 
 /**
- * Fetch + verifikasi + extract rootfs Debian resmi lewat Docker Registry HTTP API v2,
- * dengan digest layer yang sudah dipin manual (lihat [PinnedDebianRootfs] & docs/terminal.md).
+ * Fetch + verifikasi + extract tarball rootfs Debian resmi lewat HTTPS polos
+ * (raw.githubusercontent.com/debuerreotype/docker-debian-artifacts) — TANPA Docker Registry
+ * API/token. Lihat [RootfsSpec] untuk asal-usul & verifikasi digest.
  *
- * Alur (semua terverifikasi manual sebelum kode ini ditulis — lihat handoff Phase 3):
- *  1. Ambil bearer token anonim dari auth.docker.io (pull publik, tidak perlu kredensial)
- *  2. GET blob layer langsung by digest dari registry-1.docker.io (skip resolusi manifest —
- *     karena digest sudah dipin, tidak ada langkah manifest-list/manifest-per-platform di runtime)
- *  3. Verifikasi SHA-256 dari isi yang benar-benar diterima (streaming hash, bukan percaya header)
- *  4. Extract tar.gz ke ROOTFS dengan preservasi permission + symlink, dengan guard path traversal
+ * Alur:
+ *  1. GET tarball gzip langsung dari [RootfsSpec.downloadUrl] (HTTPS polos, tanpa auth)
+ *  2. Verifikasi SHA-256 dari isi yang benar-benar diterima (streaming hash, bukan percaya header)
+ *  3. Extract tar.gz ke ROOTFS dengan preservasi permission + symlink, dengan guard path traversal
  *
  * @param filesDir harus context.filesDir (app-private storage, lihat blueprint §8.3)
  */
@@ -47,10 +45,6 @@ class RootfsProvisioner(
 
     companion object {
         private const val TAG = "RootfsProvisioner"
-        private const val AUTH_URL =
-            "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${PinnedDebianRootfs.DOCKER_REPOSITORY}:pull"
-        private const val BLOB_URL_TEMPLATE =
-            "https://registry-1.docker.io/v2/${PinnedDebianRootfs.DOCKER_REPOSITORY}/blobs/sha256:%s"
     }
 
     /** Direktori ROOTFS final sesuai blueprint §8.1: /data/data/com.molinax/files/rootfs/debian-<arch>/ */
@@ -87,19 +81,16 @@ class RootfsProvisioner(
         val downloadFile = File(downloadStagingDir, "debian-${spec.abiDir}.tar.gz")
 
         try {
-            Log.i(TAG, "Mengambil token anonim Docker Registry untuk ${PinnedDebianRootfs.DOCKER_REPOSITORY}")
-            val token = fetchAnonymousToken()
-
-            Log.i(TAG, "Mengunduh layer rootfs ${spec.abiDir} (sha256:${spec.layerDigestSha256})")
-            downloadAndVerifyBlob(token, spec, downloadFile, onProgress)
+            Log.i(TAG, "Mengunduh tarball rootfs resmi ${spec.abiDir} dari ${spec.downloadUrl}")
+            downloadAndVerify(spec, downloadFile, onProgress)
 
             Log.i(TAG, "Checksum cocok, mengekstrak ke ${rootfsDirFor(spec)}")
             extractRootfs(downloadFile, rootfsDirFor(spec))
 
             markerFileFor(spec).writeText(
-                "digest=sha256:${spec.layerDigestSha256}\n" +
-                    "sizeBytes=${spec.layerSizeBytes}\n" +
-                    "maintenanceReferenceTag=${spec.maintenanceReferenceTag}\n"
+                "sha256=${spec.sha256}\n" +
+                    "sizeBytes=${spec.sizeBytes}\n" +
+                    "sourceUrl=${spec.downloadUrl}\n"
             )
             Log.i(TAG, "Rootfs ${spec.abiDir} selesai diprovisi.")
         } finally {
@@ -107,45 +98,22 @@ class RootfsProvisioner(
         }
     }
 
-    private fun fetchAnonymousToken(): String {
-        val request = Request.Builder().url(AUTH_URL).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException(
-                    "Gagal ambil token Docker Registry untuk ${PinnedDebianRootfs.DOCKER_REPOSITORY}: " +
-                        "HTTP ${response.code}"
-                )
-            }
-            val body = response.body?.string()
-                ?: throw IOException("Response token Docker Registry kosong (HTTP ${response.code})")
-            return JSONObject(body).getString("token")
-        }
-    }
-
-    private fun downloadAndVerifyBlob(
-        token: String,
+    private fun downloadAndVerify(
         spec: RootfsSpec,
         destination: File,
         onProgress: (Long, Long) -> Unit,
     ) {
-        val url = BLOB_URL_TEMPLATE.format(spec.layerDigestSha256)
-        val request = Request.Builder()
-            .url(url)
-            .header("Authorization", "Bearer $token")
-            .build()
+        val request = Request.Builder().url(spec.downloadUrl).build()
 
-        // OkHttp secara default mengikuti redirect (registry selalu 307 ke CDN signed URL,
-        // sudah dibuktikan manual) dan melepas header Authorization saat host redirect berbeda
-        // dari host asal — persis perilaku aman yang kita butuhkan di sini, tanpa kode tambahan.
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 throw IOException(
-                    "Gagal unduh blob rootfs ${spec.abiDir} (sha256:${spec.layerDigestSha256}): " +
+                    "Gagal unduh tarball rootfs ${spec.abiDir} dari ${spec.downloadUrl}: " +
                         "HTTP ${response.code}"
                 )
             }
             val body = response.body
-                ?: throw IOException("Body blob rootfs ${spec.abiDir} kosong (HTTP ${response.code})")
+                ?: throw IOException("Body tarball rootfs ${spec.abiDir} kosong (HTTP ${response.code})")
 
             val hashingSink = HashingSink.sha256(destination.sink())
             var totalRead = 0L
@@ -158,25 +126,25 @@ class RootfsProvisioner(
                         if (read == -1L) break
                         sink.emit()
                         totalRead += read
-                        onProgress(totalRead, spec.layerSizeBytes)
+                        onProgress(totalRead, spec.sizeBytes)
                     }
                 }
             }
 
             val actualDigest = hashingSink.hash.hex()
-            if (!actualDigest.equals(spec.layerDigestSha256, ignoreCase = true)) {
+            if (!actualDigest.equals(spec.sha256, ignoreCase = true)) {
                 destination.delete()
                 throw RootfsIntegrityException(
-                    "Checksum rootfs ${spec.abiDir} TIDAK COCOK. Diharapkan " +
-                        "sha256:${spec.layerDigestSha256}, didapat sha256:$actualDigest " +
-                        "(${totalRead} byte diterima). Download dibatalkan — kemungkinan korup " +
-                        "di jalur jaringan atau digest yang dipin sudah tidak valid, JANGAN dipakai."
+                    "Checksum rootfs ${spec.abiDir} TIDAK COCOK. Diharapkan sha256:${spec.sha256}, " +
+                        "didapat sha256:$actualDigest (${totalRead} byte diterima). Download " +
+                        "dibatalkan — kemungkinan korup di jalur jaringan atau tarball upstream " +
+                        "berubah, JANGAN dipakai."
                 )
             }
-            if (totalRead != spec.layerSizeBytes) {
+            if (totalRead != spec.sizeBytes) {
                 destination.delete()
                 throw RootfsIntegrityException(
-                    "Ukuran rootfs ${spec.abiDir} tidak cocok. Diharapkan ${spec.layerSizeBytes} byte, " +
+                    "Ukuran rootfs ${spec.abiDir} tidak cocok. Diharapkan ${spec.sizeBytes} byte, " +
                         "diterima $totalRead byte."
                 )
             }
@@ -191,9 +159,6 @@ class RootfsProvisioner(
         val targetRootCanonical = targetDir.canonicalFile.toPath()
 
         TarArchiveInputStream(GZIPInputStream(FileInputStream(tarGzFile))).use { tarStream ->
-            // Pass pertama: buat semua direktori & file biasa, kumpulkan symlink/hardlink
-            // untuk pass kedua (link bisa mereferensikan entry yang belum ter-extract kalau
-            // urutan di tar tidak menjamin dependency-first).
             data class DeferredLink(val entry: TarArchiveEntry, val targetPath: Path)
             val deferredLinks = mutableListOf<DeferredLink>()
 
@@ -231,7 +196,6 @@ class RootfsProvisioner(
                     Files.deleteIfExists(resolvedPath)
                     Files.createSymbolicLink(resolvedPath, java.nio.file.Paths.get(linkEntry.linkName))
                 } else {
-                    // Hardlink: target harus sudah ada dari pass pertama.
                     val linkTargetResolved = resolveEntryPathOrThrow(targetRootCanonical, linkEntry.linkName)
                     if (!Files.exists(linkTargetResolved)) {
                         throw UnsupportedTarEntryException(
