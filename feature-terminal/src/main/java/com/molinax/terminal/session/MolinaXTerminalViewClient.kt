@@ -14,6 +14,11 @@ class MolinaXTerminalViewClient(
     private val context: Context,
     private val terminalView: TerminalView,
     private val extraKeysView: ExtraKeysView?,
+    // Dipanggil saat Enter ditekan pada TerminalView yang session-nya sudah selesai (pola resmi
+    // termux-app: "[Process completed - press Enter]"). ViewClient sengaja tidak tahu apa-apa
+    // soal TerminalService/retry() -- App Host (di sini: TerminalHost) yang menyediakan aksinya,
+    // ViewClient cuma melaporkan "Enter ditekan saat mati", bukan tempat harus tahu implementasi.
+    private val onRestartRequested: () -> Unit = {},
 ) : TerminalViewClient {
 
     override fun onScale(scale: Float): Float {
@@ -42,6 +47,7 @@ class MolinaXTerminalViewClient(
 
     override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession): Boolean {
         if (keyCode == KeyEvent.KEYCODE_ENTER && !session.isRunning) {
+            onRestartRequested.invoke()
             return true
         }
         return false

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -148,6 +149,7 @@ fun TerminalHost(modifier: Modifier = Modifier) {
             context,
             currentTerminalView,
             currentExtraKeysView,
+            onRestartRequested = { currentService.retry() },
         )
         currentTerminalView.setTextSize(defaultTerminalTextSizePx(context))
         currentTerminalView.setTerminalViewClient(viewClient)
@@ -275,7 +277,21 @@ fun TerminalHost(modifier: Modifier = Modifier) {
                         sessionFinishedMessage?.let { message ->
                             Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                                 Text(text = message, style = MaterialTheme.typography.bodySmall)
-                                Button(onClick = { boundService?.retry() }) {
+                                Button(
+                                    onClick = {
+                                        // DIAGNOSTIK SEMENTARA (2026-09-16): membuktikan apakah
+                                        // tap ini benar-benar terdaftar atau tidak -- laporan user
+                                        // "tidak ada reaksi" perlu bukti nyata sebelum dicari akar
+                                        // masalahnya lebih jauh. Hapus Toast ini setelah root cause
+                                        // ketemu & fix permanen terverifikasi.
+                                        Toast.makeText(
+                                            context,
+                                            "Tap terdaftar, memanggil retry()...",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                        boundService?.retry()
+                                    },
+                                ) {
                                     Text("Mulai sesi baru")
                                 }
                             }
