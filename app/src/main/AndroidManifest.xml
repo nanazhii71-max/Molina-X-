@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- Wajib untuk PowerManager.PARTIAL_WAKE_LOCK & WifiManager.WifiLock (opt-in toggle
          via notifikasi TerminalService, meniru persis ACTION_WAKE_LOCK/ACTION_WAKE_UNLOCK
-         resmi termux-app v0.118.3, TermuxService.java) -- normal permission, tanpa prompt runtime. -->
+         resmi termux-app v0.118.3, TermuxService.java) — normal permission, tanpa prompt runtime. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
 
