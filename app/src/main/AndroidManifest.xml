@@ -6,6 +6,10 @@
 
     <!-- Wajib eksplisit (blueprint Phase 3 item 6) — TerminalService (Phase 3 item 5) butuh ini untuk startForeground(). Baseline API 26: normal permission, tanpa FOREGROUND_SERVICE_TYPE_* (itu baru wajib untuk targetSdk 34+, di luar scope proyek ini). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Wajib untuk PowerManager.PARTIAL_WAKE_LOCK & WifiManager.WifiLock (opt-in toggle
+         via notifikasi TerminalService, meniru persis ACTION_WAKE_LOCK/ACTION_WAKE_UNLOCK
+         resmi termux-app v0.118.3, TermuxService.java) -- normal permission, tanpa prompt runtime. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
 
     <application
