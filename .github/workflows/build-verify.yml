@@ -1,0 +1,255 @@
+name: Build Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-proot:
+    name: Build proot (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+    steps:
+      - name: Checkout Molina-X
+        uses: actions/checkout@v7
+
+      - name: Setup Android NDK r28c (= 28.2.13676358)
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28c
+          add-to-path: false
+          local-cache: false
+
+      - name: Diagnostic - isi toolchain bin (bukti nyata, bukan asumsi)
+        run: |
+          set -euo pipefail
+          ls -la "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/" | grep -E "llvm-ar|llvm-ranlib|llvm-strip|llvm-objcopy|llvm-objdump|clang"
+
+      - name: Build libtalloc
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          chmod +x buildscripts/proot/*.sh
+          ./buildscripts/proot/build-libtalloc.sh ${{ matrix.abi }}
+
+      - name: Build libandroid-shmem
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          ./buildscripts/proot/build-libandroid-shmem.sh ${{ matrix.abi }}
+
+      - name: Build proot
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          ./buildscripts/proot/build-proot.sh ${{ matrix.abi }}
+
+      - name: Verifikasi checksum & arsitektur binary hasil build
+        run: |
+          set -euo pipefail
+          sha256sum "native/proot/${{ matrix.abi }}/proot"
+          file "native/proot/${{ matrix.abi }}/proot"
+
+      - name: Upload artifact proot-${{ matrix.abi }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: proot-${{ matrix.abi }}
+          path: native/proot/${{ matrix.abi }}/proot
+          if-no-files-found: error
+          retention-days: 14
+
+  build-libmpv:
+    name: Build libmpv (reusable)
+    uses: ./.github/workflows/build-libmpv.yml
+
+  verify:
+    name: Build & Verify APK
+    needs: [build-proot, build-libmpv]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup JDK 21 (Temurin)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Accept SDK licenses
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+
+      - name: Install Build-Tools 37.0.0, Platform 37.0
+        run: |
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "build-tools;37.0.0" \
+            "platforms;android-37.0"
+
+      - name: VERIFY packages actually installed on disk
+        run: |
+          test -d "${ANDROID_SDK_ROOT}/build-tools/37.0.0" && echo "Build-Tools 37.0.0: OK" || (echo "Build-Tools 37.0.0: MISSING" && exit 1)
+          test -d "${ANDROID_SDK_ROOT}/platforms/android-37.0" && echo "Platform 37.0: OK" || (echo "Platform 37.0: MISSING" && exit 1)
+
+      - name: Download proot arm64-v8a
+        uses: actions/download-artifact@v4
+        with:
+          name: proot-arm64-v8a
+          path: /tmp/proot-arm64-v8a
+
+      - name: Download proot armeabi-v7a
+        uses: actions/download-artifact@v4
+        with:
+          name: proot-armeabi-v7a
+          path: /tmp/proot-armeabi-v7a
+
+      - name: Tempatkan binary proot ke jniLibs (nama libproot.so, wajib lolos W^X Android 10+)
+        run: |
+          set -euo pipefail
+          mkdir -p feature-terminal/src/main/jniLibs/arm64-v8a
+          mkdir -p feature-terminal/src/main/jniLibs/armeabi-v7a
+          cp /tmp/proot-arm64-v8a/proot feature-terminal/src/main/jniLibs/arm64-v8a/libproot.so
+          cp /tmp/proot-armeabi-v7a/proot feature-terminal/src/main/jniLibs/armeabi-v7a/libproot.so
+          chmod +x feature-terminal/src/main/jniLibs/arm64-v8a/libproot.so
+          chmod +x feature-terminal/src/main/jniLibs/armeabi-v7a/libproot.so
+          find feature-terminal/src/main/jniLibs -type f -exec ls -la {} \;
+
+      - name: Download libmpv arm64-v8a
+        uses: actions/download-artifact@v4
+        with:
+          name: libmpv-arm64-v8a
+          path: /tmp/libmpv-arm64-v8a
+
+      - name: Download libmpv armeabi-v7a
+        uses: actions/download-artifact@v4
+        with:
+          name: libmpv-armeabi-v7a
+          path: /tmp/libmpv-armeabi-v7a
+
+      - name: Tempatkan libmpv.so + dependency FFmpeg + libc++_shared.so ke jniLibs feature-player
+        run: |
+          set -euo pipefail
+          mkdir -p feature-player/src/main/jniLibs/arm64-v8a
+          mkdir -p feature-player/src/main/jniLibs/armeabi-v7a
+
+          # Copy SEMUA .so dari staging (bukan cuma libmpv.so) — libmpv.so
+          # punya NEEDED dependency dinamis nyata ke 7 .so FFmpeg (readelf,
+          # diverifikasi di build-libmpv.yml), tanpa itu UnsatisfiedLinkError
+          # saat libplayer.so nanti dlopen/link ke libmpv.so.
+          cp /tmp/libmpv-arm64-v8a/*.so feature-player/src/main/jniLibs/arm64-v8a/
+          cp /tmp/libmpv-armeabi-v7a/*.so feature-player/src/main/jniLibs/armeabi-v7a/
+
+          # Guard eksplisit: pastikan tepat 9 file per ABI (bukan cuma "ada
+          # file"), supaya kalau staging berubah di build-libmpv.yml nanti,
+          # step ini gagal keras bukan diam-diam kurang.
+          EXPECTED=9
+          for abi in arm64-v8a armeabi-v7a; do
+            COUNT=$(find "feature-player/src/main/jniLibs/$abi" -maxdepth 1 -name '*.so' | wc -l)
+            echo "=== $abi: $COUNT file .so ==="
+            find "feature-player/src/main/jniLibs/$abi" -maxdepth 1 -name '*.so' -exec ls -la {} \;
+            if [ "$COUNT" -ne "$EXPECTED" ]; then
+              echo "GAGAL: $abi punya $COUNT file .so, diharapkan $EXPECTED" >&2
+              exit 1
+            fi
+          done
+
+      - name: Download mpv prefix arm64-v8a (lib+include, untuk compile libplayer.so)
+        uses: actions/download-artifact@v4
+        with:
+          name: mpv-prefix-arm64-v8a
+          path: /tmp/mpv-prefix-arm64-v8a
+
+      - name: Download mpv prefix armeabi-v7a (lib+include, untuk compile libplayer.so)
+        uses: actions/download-artifact@v4
+        with:
+          name: mpv-prefix-armeabi-v7a
+          path: /tmp/mpv-prefix-armeabi-v7a
+
+      - name: Export MPV_PREFIX_ARM64 / MPV_PREFIX_ARMV7 untuk externalNativeBuild.ndkBuild
+        run: |
+          set -euo pipefail
+          test -f /tmp/mpv-prefix-arm64-v8a/lib/libmpv.so
+          test -f /tmp/mpv-prefix-armeabi-v7a/lib/libmpv.so
+          echo "MPV_PREFIX_ARM64=/tmp/mpv-prefix-arm64-v8a" >> "$GITHUB_ENV"
+          echo "MPV_PREFIX_ARMV7=/tmp/mpv-prefix-armeabi-v7a" >> "$GITHUB_ENV"
+          echo "Prefix arm64-v8a & armeabi-v7a siap, env var di-export."
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: "Build debug APK (Phase 3 - Terminal Runtime: proot binary terintegrasi)"
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: VERIFY APK actually exists on disk
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_PATH" && echo "APK: OK ($(du -sh "$APK_PATH" | cut -f1))" || (echo "APK: MISSING at $APK_PATH" && find app/build/outputs -type f && exit 1)
+
+      - name: VERIFY libtermux.so present in APK (arm64-v8a & armeabi-v7a)
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a/libtermux.so" && echo "libtermux.so arm64-v8a: OK" || (echo "libtermux.so arm64-v8a: MISSING" && exit 1)
+          unzip -l "$APK_PATH" | grep -q "lib/armeabi-v7a/libtermux.so" && echo "libtermux.so armeabi-v7a: OK" || (echo "libtermux.so armeabi-v7a: MISSING" && exit 1)
+
+      - name: VERIFY libproot.so present in APK (arm64-v8a & armeabi-v7a)
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a/libproot.so" && echo "libproot.so arm64-v8a: OK" || (echo "libproot.so arm64-v8a: MISSING" && exit 1)
+          unzip -l "$APK_PATH" | grep -q "lib/armeabi-v7a/libproot.so" && echo "libproot.so armeabi-v7a: OK" || (echo "libproot.so armeabi-v7a: MISSING" && exit 1)
+
+      - name: VERIFY libmpv.so present in APK (arm64-v8a & armeabi-v7a)
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a/libmpv.so" && echo "libmpv.so arm64-v8a: OK" || (echo "libmpv.so arm64-v8a: MISSING" && exit 1)
+          unzip -l "$APK_PATH" | grep -q "lib/armeabi-v7a/libmpv.so" && echo "libmpv.so armeabi-v7a: OK" || (echo "libmpv.so armeabi-v7a: MISSING" && exit 1)
+
+      - name: VERIFY dependency FFmpeg + libc++_shared.so present in APK (arm64-v8a & armeabi-v7a)
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          REQUIRED_SO="libavcodec.so libavfilter.so libavformat.so libavutil.so libavdevice.so libswresample.so libswscale.so libc++_shared.so"
+          for so in $REQUIRED_SO; do
+            for abi in arm64-v8a armeabi-v7a; do
+              unzip -l "$APK_PATH" | grep -q "lib/$abi/$so" && echo "$so $abi: OK" || (echo "$so $abi: MISSING" && exit 1)
+            done
+          done
+
+      - name: VERIFY libplayer.so ada di APK + JNI symbol com.molinax.player.MPVLib ter-export (arm64-v8a & armeabi-v7a)
+        run: |
+          set -euo pipefail
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          for abi in arm64-v8a armeabi-v7a; do
+            unzip -l "$APK_PATH" | grep -q "lib/$abi/libplayer.so" && echo "libplayer.so $abi: OK" || (echo "libplayer.so $abi: MISSING" && exit 1)
+
+            unzip -p "$APK_PATH" "lib/$abi/libplayer.so" > "/tmp/libplayer-$abi.so"
+            # Verifikasi symbol JNI benar ter-export dengan nama package
+            # com.molinax.player.MPVLib (bukan is.xyz.mpv.MPVLib upstream) —
+            # membuktikan rename jni_utils.h benar-benar terpakai saat
+            # compile, bukan cuma benar di source.
+            readelf -W --dyn-syms "/tmp/libplayer-$abi.so" | grep -q "Java_com_molinax_player_MPVLib_create" \
+              && echo "JNI symbol com.molinax.player.MPVLib $abi: OK" \
+              || (echo "JNI symbol com.molinax.player.MPVLib $abi: MISSING" && exit 1)
+          done
+
+      - name: VERIFY extractNativeLibs=true di merged manifest (wajib untuk exec() proot)
+        run: |
+          MANIFEST="app/build/intermediates/merged_manifest/debug/AndroidManifest.xml"
+          test -f "$MANIFEST" || MANIFEST=$(find app/build -name "AndroidManifest.xml" -path "*merged*" | head -1)
+          grep -q 'extractNativeLibs="true"' "$MANIFEST" && echo "extractNativeLibs=true: OK" || (echo "extractNativeLibs: MISSING/false" && cat "$MANIFEST" && exit 1)
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MolinaX-debug-apk-phase3
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
