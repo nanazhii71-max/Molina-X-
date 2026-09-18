@@ -11,6 +11,20 @@ plugins {
   kotlin("jvm") version libs.versions.kotlin.get()
 }
 
+// Nilai bersama untuk seluruh modul (dipakai via rootProject.extra[...] di
+// core-common, feature-player, feature-terminal). Disamakan dengan literal
+// yang sudah hardcode di app/, core/, feature-editor/, feature-utilities/,
+// dan dengan gradle/libs.versions.toml.
+extra["molinaxCompileSdk"] = 36
+extra["molinaxMinSdk"] = 26
+extra["molinaxJvmToolchain"] = 21
+extra["molinaxComposeBom"] = "2024.09.00"
+extra["molinaxCoreKtx"] = "1.18.0"
+extra["molinaxDatastorePreferences"] = "1.1.7"
+extra["molinaxSerializationCore"] = "1.7.3"
+extra["molinaxOkHttp"] = "4.10.0"
+extra["molinaxMedia3"] = "1.11.1"
+
 kotlin {
   jvmToolchain(21)
 }
