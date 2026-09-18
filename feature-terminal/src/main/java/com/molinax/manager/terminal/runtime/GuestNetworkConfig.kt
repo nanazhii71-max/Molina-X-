@@ -1,4 +1,4 @@
-package com.molinax.terminal.runtime
+package com.molinax.manager.terminal.runtime
 
 import java.io.File
 

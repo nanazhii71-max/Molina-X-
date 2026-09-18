@@ -1,9 +1,9 @@
 /*
  * Copied from termux/termux-app (https://github.com/termux/termux-app), tag v0.118.3.
  * Original path: termux-shared/src/main/java/com/termux/shared/terminal/io/TerminalExtraKeys.java
- * Package renamed from com.termux.shared.terminal.io to com.molinax.terminal.io, and the
+ * Package renamed from com.termux.shared.terminal.io to com.molinax.manager.terminal.io, and the
  * ExtraKeysView/ExtraKeyButton/SpecialButton imports repointed to the copies already vendored
- * at com.molinax.terminal.io.extrakeys (see that package's own file headers). Content otherwise
+ * at com.molinax.manager.terminal.io.extrakeys (see that package's own file headers). Content otherwise
  * verbatim.
  *
  * Licensed under the GNU General Public License v3.0 only (GPLv3-only) -- same basis as the
@@ -22,7 +22,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package com.molinax.terminal.io;
+package com.molinax.manager.terminal.io;
 
 import android.view.KeyEvent;
 import android.view.View;
@@ -30,18 +30,18 @@ import android.widget.Button;
 
 import androidx.annotation.NonNull;
 
-import com.molinax.terminal.io.extrakeys.ExtraKeyButton;
-import com.molinax.terminal.io.extrakeys.ExtraKeysView;
-import com.molinax.terminal.io.extrakeys.SpecialButton;
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeyButton;
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysView;
+import com.molinax.manager.terminal.io.extrakeys.SpecialButton;
 import com.termux.view.TerminalView;
 
-import static com.molinax.terminal.io.extrakeys.ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS;
+import static com.molinax.manager.terminal.io.extrakeys.ExtraKeysConstants.PRIMARY_KEY_CODES_FOR_STRINGS;
 
 
 /**
  * Default {@link ExtraKeysView.IExtraKeysView} implementation: routes extra-key clicks (and
  * macro sequences) to the attached {@link TerminalView}, either as a synthetic {@link KeyEvent}
- * for keys present in {@link com.molinax.terminal.io.extrakeys.ExtraKeysConstants#PRIMARY_KEY_CODES_FOR_STRINGS}
+ * for keys present in {@link com.molinax.manager.terminal.io.extrakeys.ExtraKeysConstants#PRIMARY_KEY_CODES_FOR_STRINGS}
  * (ESC, TAB, arrows, HOME/END/PGUP/PGDN, etc.), or as literal code points otherwise.
  */
 public class TerminalExtraKeys implements ExtraKeysView.IExtraKeysView {

@@ -1,4 +1,4 @@
-package com.molinax.terminal.runtime
+package com.molinax.manager.terminal.runtime
 
 import android.util.Log
 import okhttp3.OkHttpClient
@@ -47,7 +47,7 @@ class RootfsProvisioner(
         private const val TAG = "RootfsProvisioner"
     }
 
-    /** Direktori ROOTFS final sesuai blueprint §8.1: /data/data/com.molinax/files/rootfs/debian-<arch>/ */
+    /** Direktori ROOTFS final sesuai blueprint §8.1: /data/data/com.molinax.manager/files/rootfs/debian-<arch>/ */
     fun rootfsDirFor(spec: RootfsSpec): File = File(filesDir, "rootfs/debian-${spec.abiDir}")
 
     private fun markerFileFor(spec: RootfsSpec): File =

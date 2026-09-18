@@ -1,11 +1,11 @@
-package com.molinax.terminal.session
+package com.molinax.manager.terminal.session
 
 import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
-import com.molinax.terminal.io.extrakeys.ExtraKeysView
-import com.molinax.terminal.io.extrakeys.SpecialButton
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysView
+import com.molinax.manager.terminal.io.extrakeys.SpecialButton
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient

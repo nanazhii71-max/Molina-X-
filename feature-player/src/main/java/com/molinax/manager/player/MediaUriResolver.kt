@@ -1,4 +1,4 @@
-package com.molinax.player
+package com.molinax.manager.player
 
 import android.content.ContentResolver
 import android.content.Context

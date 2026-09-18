@@ -1,4 +1,4 @@
-package com.molinax.terminal.session
+package com.molinax.manager.terminal.session
 
 import android.content.Context
 import androidx.datastore.core.DataStore

@@ -1,10 +1,10 @@
-package com.molinax.terminal.session
+package com.molinax.manager.terminal.session
 
 import android.content.Context
 import android.os.Looper
-import com.molinax.terminal.runtime.GuestNetworkConfig
-import com.molinax.terminal.runtime.PinnedDebianRootfs
-import com.molinax.terminal.runtime.RootfsProvisioner
+import com.molinax.manager.terminal.runtime.GuestNetworkConfig
+import com.molinax.manager.terminal.runtime.PinnedDebianRootfs
+import com.molinax.manager.terminal.runtime.RootfsProvisioner
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import java.io.File

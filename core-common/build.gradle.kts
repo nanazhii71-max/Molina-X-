@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.molinax.common"
+    namespace = "com.molinax.manager.common"
     compileSdk = rootProject.extra["molinaxCompileSdk"] as Int
 
     defaultConfig {

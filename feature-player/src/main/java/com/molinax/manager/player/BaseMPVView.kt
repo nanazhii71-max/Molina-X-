@@ -1,4 +1,4 @@
-package com.molinax.player
+package com.molinax.manager.player
 
 import android.content.Context
 import android.util.AttributeSet
@@ -8,10 +8,10 @@ import android.view.SurfaceView
 
 // Port dari is.xyz.mpv.BaseMPVView (mpv-android, commit terbaru default branch) —
 // hanya berisi kode esensial untuk menampilkan gambar ke layar. Konsisten dengan MPVLib.kt
-// yang sudah di-port ke package com.molinax.player.
+// yang sudah di-port ke package com.molinax.manager.player.
 //
 // Perbedaan dari upstream:
-// - package `is`.xyz.mpv -> com.molinax.player (menyesuaikan MPVLib.kt yang sudah ada)
+// - package `is`.xyz.mpv -> com.molinax.manager.player (menyesuaikan MPVLib.kt yang sudah ada)
 // - TAG log "mpv" -> "MolinaXPlayer" (konsisten dengan konvensi logging Molina-X lainnya,
 //   lihat core-common/logging/AppLogger.kt)
 // - `attrs` dibuat nullable (upstream selalu inflate MPVView dari XML lewat ViewBinding

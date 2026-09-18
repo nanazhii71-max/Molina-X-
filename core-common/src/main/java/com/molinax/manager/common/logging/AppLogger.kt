@@ -1,4 +1,4 @@
-package com.molinax.common.logging
+package com.molinax.manager.common.logging
 
 import android.content.Context
 import android.util.Log

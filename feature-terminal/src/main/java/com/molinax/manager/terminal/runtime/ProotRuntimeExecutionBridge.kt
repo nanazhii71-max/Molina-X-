@@ -1,10 +1,10 @@
-package com.molinax.terminal.runtime
+package com.molinax.manager.terminal.runtime
 
 import android.content.Context
-import com.molinax.common.ExecutionResult
-import com.molinax.common.ProotLaunchException
-import com.molinax.common.RootfsNotProvisionedException
-import com.molinax.common.RuntimeExecutionBridge
+import com.molinax.manager.common.ExecutionResult
+import com.molinax.manager.common.ProotLaunchException
+import com.molinax.manager.common.RootfsNotProvisionedException
+import com.molinax.manager.common.RuntimeExecutionBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext

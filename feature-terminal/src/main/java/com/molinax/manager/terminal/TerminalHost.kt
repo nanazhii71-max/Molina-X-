@@ -1,4 +1,4 @@
-package com.molinax.terminal
+package com.molinax.manager.terminal
 
 import android.Manifest
 import android.content.ComponentName
@@ -40,14 +40,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.molinax.common.logging.AppLogger
-import com.molinax.terminal.io.TerminalExtraKeys
-import com.molinax.terminal.io.extrakeys.ExtraKeysConstants
-import com.molinax.terminal.io.extrakeys.ExtraKeysInfo
-import com.molinax.terminal.io.extrakeys.ExtraKeysView
-import com.molinax.terminal.service.TerminalService
-import com.molinax.terminal.service.TerminalServiceState
-import com.molinax.terminal.session.MolinaXTerminalViewClient
+import com.molinax.manager.common.logging.AppLogger
+import com.molinax.manager.terminal.io.TerminalExtraKeys
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysConstants
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysInfo
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysView
+import com.molinax.manager.terminal.service.TerminalService
+import com.molinax.manager.terminal.service.TerminalServiceState
+import com.molinax.manager.terminal.session.MolinaXTerminalViewClient
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
 

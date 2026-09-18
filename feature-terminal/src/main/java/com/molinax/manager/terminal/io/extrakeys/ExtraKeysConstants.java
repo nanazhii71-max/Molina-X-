@@ -1,7 +1,7 @@
 /*
  * Copied from termux/termux-app (https://github.com/termux/termux-app), tag v0.118.3.
  * Original path: termux-shared/src/main/java/com/termux/shared/terminal/io/extrakeys/ExtraKeysConstants.java
- * Package renamed from com.termux.shared.terminal.io.extrakeys to com.molinax.terminal.io.extrakeys.
+ * Package renamed from com.termux.shared.terminal.io.extrakeys to com.molinax.manager.terminal.io.extrakeys.
  * Content otherwise verbatim.
  *
  * Licensed under the GNU General Public License v3.0 only (GPLv3-only).
@@ -23,7 +23,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package com.molinax.terminal.io.extrakeys;
+package com.molinax.manager.terminal.io.extrakeys;
 
 import android.view.KeyEvent;
 

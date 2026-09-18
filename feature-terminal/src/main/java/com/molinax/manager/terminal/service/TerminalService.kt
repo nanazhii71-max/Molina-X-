@@ -1,4 +1,4 @@
-package com.molinax.terminal.service
+package com.molinax.manager.terminal.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -9,15 +9,15 @@ import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Binder
 import android.os.IBinder
-import com.molinax.common.logging.AppLogger
-import com.molinax.terminal.R
-import com.molinax.terminal.runtime.PinnedDebianRootfs
-import com.molinax.terminal.runtime.RootfsProvisioner
-import com.molinax.terminal.session.InteractiveProotSessionFactory
-import com.molinax.terminal.session.MolinaXTerminalSessionClient
-import com.molinax.terminal.session.ProotBinaryMissingException
-import com.molinax.terminal.session.RootfsNotReadyException
-import com.molinax.terminal.session.SessionMetadataStore
+import com.molinax.manager.common.logging.AppLogger
+import com.molinax.manager.terminal.R
+import com.molinax.manager.terminal.runtime.PinnedDebianRootfs
+import com.molinax.manager.terminal.runtime.RootfsProvisioner
+import com.molinax.manager.terminal.session.InteractiveProotSessionFactory
+import com.molinax.manager.terminal.session.MolinaXTerminalSessionClient
+import com.molinax.manager.terminal.session.ProotBinaryMissingException
+import com.molinax.manager.terminal.session.RootfsNotReadyException
+import com.molinax.manager.terminal.session.SessionMetadataStore
 import com.termux.terminal.TerminalSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -322,7 +322,7 @@ class TerminalService : Service() {
     companion object {
         private const val CHANNEL_ID = "molinax_terminal"
         private const val NOTIFICATION_ID = 1001
-        const val ACTION_STOP = "com.molinax.terminal.action.STOP"
-        const val ACTION_RETRY = "com.molinax.terminal.action.RETRY"
+        const val ACTION_STOP = "com.molinax.manager.terminal.action.STOP"
+        const val ACTION_RETRY = "com.molinax.manager.terminal.action.RETRY"
     }
 }

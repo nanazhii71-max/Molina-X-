@@ -1,4 +1,4 @@
-package com.molinax.common
+package com.molinax.manager.common
 
 /**
  * Wrapper hasil generik dipakai lintas modul (Player/Editor/Terminal/Utilities)

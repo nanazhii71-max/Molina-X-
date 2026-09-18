@@ -1,4 +1,4 @@
-package com.molinax.player
+package com.molinax.manager.player
 
 import android.content.Context
 import android.os.Build
@@ -6,17 +6,17 @@ import android.os.Environment
 import android.util.AttributeSet
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.molinax.player.MPVLib.MpvFormat.MPV_FORMAT_DOUBLE
-import com.molinax.player.MPVLib.MpvFormat.MPV_FORMAT_FLAG
-import com.molinax.player.MPVLib.MpvFormat.MPV_FORMAT_INT64
-import com.molinax.player.MPVLib.MpvFormat.MPV_FORMAT_NONE
-import com.molinax.player.MPVLib.MpvFormat.MPV_FORMAT_STRING
+import com.molinax.manager.player.MPVLib.MpvFormat.MPV_FORMAT_DOUBLE
+import com.molinax.manager.player.MPVLib.MpvFormat.MPV_FORMAT_FLAG
+import com.molinax.manager.player.MPVLib.MpvFormat.MPV_FORMAT_INT64
+import com.molinax.manager.player.MPVLib.MpvFormat.MPV_FORMAT_NONE
+import com.molinax.manager.player.MPVLib.MpvFormat.MPV_FORMAT_STRING
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.reflect.KProperty
 
 // Port dari is.xyz.mpv.MPVView (mpv-android, commit 751d532, /root/ref/mpv-android) ke
-// com.molinax.player, konkretisasi BaseMPVView.kt yang sudah ada di module ini.
+// com.molinax.manager.player, konkretisasi BaseMPVView.kt yang sudah ada di module ini.
 //
 // DEVIASI TERDOKUMENTASI dari upstream (bukan pengurangan diam-diam):
 // 1. Tidak ada SharedPreferences/PreferenceManager sama sekali — Settings UI Player (blueprint

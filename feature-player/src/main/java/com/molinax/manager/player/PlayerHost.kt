@@ -1,4 +1,4 @@
-package com.molinax.player
+package com.molinax.manager.player
 
 import android.content.ComponentName
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,7 +31,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
-import com.molinax.common.logging.AppLogger
+import com.molinax.manager.common.logging.AppLogger
 
 /**
  * Player subsystem UI (Phase 4). Tiga tanggung jawab dipisah jelas, mengikuti keputusan

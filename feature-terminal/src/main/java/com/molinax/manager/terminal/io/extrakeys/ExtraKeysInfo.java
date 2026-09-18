@@ -1,7 +1,7 @@
 /*
  * Copied from termux/termux-app (https://github.com/termux/termux-app), tag v0.118.3.
  * Original path: termux-shared/src/main/java/com/termux/shared/terminal/io/extrakeys/ExtraKeysInfo.java
- * Package renamed from com.termux.shared.terminal.io.extrakeys to com.molinax.terminal.io.extrakeys.
+ * Package renamed from com.termux.shared.terminal.io.extrakeys to com.molinax.manager.terminal.io.extrakeys.
  * Content otherwise verbatim (one internal import updated to match the new package).
  *
  * Licensed under the GNU General Public License v3.0 only (GPLv3-only).
@@ -23,14 +23,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package com.molinax.terminal.io.extrakeys;
+package com.molinax.manager.terminal.io.extrakeys;
 
 import android.view.View;
 import android.widget.Button;
 
 import androidx.annotation.NonNull;
 
-import com.molinax.terminal.io.extrakeys.ExtraKeysConstants.EXTRA_KEY_DISPLAY_MAPS;
+import com.molinax.manager.terminal.io.extrakeys.ExtraKeysConstants.EXTRA_KEY_DISPLAY_MAPS;
 
 import org.json.JSONArray;
 import org.json.JSONException;

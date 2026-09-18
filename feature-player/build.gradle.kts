@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.molinax.player"
+    namespace = "com.molinax.manager.player"
     compileSdk = rootProject.extra["molinaxCompileSdk"] as Int
 
     // Path ke Android.mk — dibaca AGP untuk mengorkestrasi ndk-build sebagai

@@ -1,4 +1,4 @@
-package com.molinax.common
+package com.molinax.manager.common
 
 import java.io.File
 
