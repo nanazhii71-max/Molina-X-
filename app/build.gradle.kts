@@ -79,6 +79,7 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 // This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(project(":core"))
+  implementation(project(":core-common"))
   implementation(project(":feature-player"))
   implementation(project(":feature-editor"))
   implementation(project(":feature-terminal"))
