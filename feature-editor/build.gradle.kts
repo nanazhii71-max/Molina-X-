@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.molinax.manager.editor"
+    namespace = "com.molinax.editor"
     compileSdk = 36
 
     defaultConfig {

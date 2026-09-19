@@ -3,7 +3,7 @@
 
     <application>
         <service
-            android:name="com.molinax.manager.terminal.service.TerminalService"
+            android:name="com.molinax.terminal.service.TerminalService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property

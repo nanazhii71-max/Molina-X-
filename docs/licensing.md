@@ -1,15 +1,15 @@
 # Licensing & Open Source Attributions
 
-## MolinaX Manager License
+## Molina-X License
 
-MolinaX Manager is licensed under the **GNU General Public License v3.0 (GPLv3)**.
+Molina-X is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 See the [LICENSE](../LICENSE) file for the full license text.
 
 ---
 
 ## Upstream Components & Copyleft Analysis
 
-MolinaX Manager combines four key subsystems designed for advanced Android developers, sysadmins, and power users:
+Molina-X combines four key subsystems designed for advanced Android developers, sysadmins, and power users:
 
 | Subsystem | Upstream Reference | Upstream License | Copyleft & Integration Status |
 |---|---|---|---|
@@ -23,8 +23,8 @@ MolinaX Manager combines four key subsystems designed for advanced Android devel
 ## Package Name & Runtime Isolation
 
 The application ID and runtime path are strictly isolated to:
-- **Package:** `com.molinax.manager`
-- **PREFIX:** `/data/data/com.molinax.manager/files/usr`
-- **HOME:** `/data/data/com.molinax.manager/files/home`
+- **Package:** `com.molinax`
+- **PREFIX:** `/data/data/com.molinax/files/usr`
+- **HOME:** `/data/data/com.molinax/files/home`
 
-MolinaX Manager operates in its own sandboxed environment and does not depend on or interfere with third-party application directories.
+Molina-X operates in its own sandboxed environment and does not depend on or interfere with third-party application directories.

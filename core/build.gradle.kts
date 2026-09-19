@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.molinax.manager.core"
+    namespace = "com.molinax.core"
     compileSdk = 36
 
     defaultConfig {

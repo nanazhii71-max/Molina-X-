@@ -23,7 +23,7 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "MolinaX Manager"
+rootProject.name = "Molina-X"
 
 include(":app")
 include(":core")
